@@ -11,12 +11,15 @@ jobs:
 
     steps:
       - name: Downloading & Installing Essentials
+        shell: pwsh
         run: |
-          Invoke-WebRequest -Uri "https://gitlab.com/raposabrty/pcrdp/-/raw/main/Downloads.bat" -OutFile "Downloads.bat"
+          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/gulshanhex/RDP-Windows-2022-via-Avica/main/Downloads.bat" -OutFile "Downloads.bat"
           cmd /c Downloads.bat
 
       - name: Show Website
-        run: cmd /c show.bat
+        shell: cmd
+        run: show.bat
 
       - name: Time Counter
-        run: cmd /c loop.bat
+        shell: cmd
+        run: loop.bat
