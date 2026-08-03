@@ -28,7 +28,6 @@ on:
         required: false
         default: "0"
 
-  # Optional backup: start B when A completes (in case REST dispatch is blocked/rate-limited).
   workflow_run:
     workflows: ["Windows RDP via Tailscale (A)"]
     types: [completed]
@@ -58,16 +57,15 @@ jobs:
       - name: 🔧 Resolve inputs (safe)
         id: cfg
         env:
-          RAW_TAILNET:  ${{ inputs.ts_tailnet }}
-          RAW_APIKEY:   ${{ inputs.ts_api_key }}
-          RAW_AUTHKEY:  ${{ inputs.ts_authkey }}
-          RAW_PAT:      ${{ inputs.gh_api_token }}
-          RAW_TEST:     ${{ inputs.test_mode == true && 'true' || 'false' }}
-          RAW_RUNTIME:  ${{ inputs.runtime_minutes || '355' }}
-          RAW_LOOPS:    ${{ inputs.loops || '0' }}
+          RAW_TAILNET: ${{ inputs.ts_tailnet }}
+          RAW_APIKEY: ${{ inputs.ts_api_key }}
+          RAW_AUTHKEY: ${{ inputs.ts_authkey }}
+          RAW_PAT: ${{ inputs.gh_api_token }}
+          RAW_TEST: ${{ inputs.test_mode == true && 'true' || 'false' }}
+          RAW_RUNTIME: ${{ inputs.runtime_minutes || '355' }}
+          RAW_LOOPS: ${{ inputs.loops || '0' }}
         run: |
           function ToIntOr($v, $def){ if("$v" -match '^\d+$'){[int]$v}else{[int]$def} }
-
           $tailnet = $env:RAW_TAILNET
           $apiKey  = $env:RAW_APIKEY
           $authKey = $env:RAW_AUTHKEY
@@ -75,20 +73,13 @@ jobs:
           if (-not $tailnet -or -not $apiKey -or -not $authKey -or -not $pat) {
             Write-Error "Missing required inputs"; exit 1
           }
-
-          # Robust boolean
           $isTest = ($env:RAW_TEST -match '^(?i:true|1|yes|on)$')
-
           $runtime = ToIntOr $env:RAW_RUNTIME 355
           if ($isTest) { $runtime = 5 }
-
-          # Ensure ~6h (355) when test_mode is off and value is too small
           if (-not $isTest -and $runtime -lt 6) { $runtime = 355 }
           if ($runtime -gt 360) { $runtime = 355 }
-
           $loops = ToIntOr $env:RAW_LOOPS 0
           if ($loops -lt 0) { $loops = 0 }
-
           "tailnet=$tailnet" | Out-File -Append $env:GITHUB_OUTPUT
           "apikey=$apiKey"   | Out-File -Append $env:GITHUB_OUTPUT
           "authkey=$authKey" | Out-File -Append $env:GITHUB_OUTPUT
@@ -150,7 +141,6 @@ jobs:
           & $ts logout | Out-Null
           & $ts up --authkey "${{ steps.cfg.outputs.authkey }}" --hostname "${{ env.TS_HOSTNAME }}" --accept-routes --accept-dns=false
           Start-Sleep -Seconds 2
-
           $ip4 = (& $ts ip -4 | Select-Object -First 1)
           $status = & $ts status --json | ConvertFrom-Json
           $fqdn = $status.Self.DNSName
@@ -158,7 +148,6 @@ jobs:
           "ip4=$ip4"   | Out-File -Append $env:GITHUB_OUTPUT
           "fqdn=$fqdn" | Out-File -Append $env:GITHUB_OUTPUT
           "derp=$derp" | Out-File -Append $env:GITHUB_OUTPUT
-
           "### RDP (B)`nHost: $env:TS_HOSTNAME`nIPv4: $ip4`nMagicDNS: $fqdn`nDERP: $derp`nUser: $env:RDP_USER`nPass: $env:RDP_PASS" | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
 
       - name: ⏳ Keep alive
@@ -197,7 +186,6 @@ jobs:
           $loops=[int]"${{ steps.cfg.outputs.loops }}"
           if ($loops -eq 1) { Write-Host "Loops finished; not dispatching."; exit 0 }
           if ($loops -gt 1) { $next=$loops-1 } else { $next=0 }
-
           $token="${{ steps.cfg.outputs.pat }}"
           $body=@{
             ref    = "${{ github.ref_name }}"
@@ -211,7 +199,6 @@ jobs:
               loops           = "$next"
             }
           } | ConvertTo-Json -Depth 5
-
           Invoke-RestMethod -Method POST `
             -Uri "https://api.github.com/repos/${{ github.repository }}/actions/workflows/windows-rdp-tailscale-A.yml/dispatches" `
             -Headers @{ Authorization = "Bearer $token"; "Accept"="application/vnd.github+json" } `
